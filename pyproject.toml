@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "usb_panel"
+version = "0.1.0"
+description = "USB panel applet for COSMIC (GTK4)"
+authors = [
+  { name = "Your Name", email = "you@example.com" }
+]
+license = { text = "Apache-2.0" }
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "pygobject>=3.44",
+  "nlohmann-json; sys_platform != 'win32'",  # if you use JSON parsing in C++ bindings
+]
+
+[project.urls]
+Homepage = "https://github.com/yourname/usb_panel"
+
+[project.scripts]
+usb-panel = "usb_panel.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["usb_panel*"]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
