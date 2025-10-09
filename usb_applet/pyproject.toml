@@ -14,19 +14,16 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
   "pygobject>=3.44",
-  "nlohmann-json; sys_platform != 'win32'",  # if you use JSON parsing in C++ bindings
+  #"nlohmann-json; sys_platform != 'win32'",  # if you use JSON parsing in C++ bindings
 ]
 
 [project.urls]
 Homepage = "https://github.com/yourname/usb_panel"
 
 [project.scripts]
-usb-panel = "usb_panel.__main__:main"
+usb_panel = "bin.usb_applet:main"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["usb_panel*"]
+where = ["src"]
 
-[tool.setuptools]
-package-dir = {"" = "."}
 
