@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import subprocess
-from usb_ctl.api_client import APIClient
-
 import json 
-from usb_ctl.logger import logger
+
+from ghaf_usb_applet.api_client import APIClient
+from ghaf_usb_applet.logger import logger
 
 def format_product_name(dev):
     product_name = dev.get('product_name', None)

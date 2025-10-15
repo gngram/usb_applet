@@ -6,8 +6,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gtk, Gdk, Pango, GLib
 
-from usb_ctl.api_client import APIClient
-from usb_ctl.logger import logger
+from ghaf_usb_applet.api_client import APIClient
+from ghaf_usb_applet.logger import logger
 
 import json
 
@@ -52,12 +52,12 @@ class OptionsPopover(Gtk.Popover):
         self.popdown()
 
 
-class DisplayOptionsWindow(Gtk.ApplicationWindow):
+class DeviceSettings(Gtk.ApplicationWindow):
     def __init__(self, port, **kwargs):
         super().__init__(**kwargs)
         self.apiclient = APIClient(port=port)
         self.apiclient.connect()
-        self.set_title("Displays")
+        self.set_title("USB Devices")
         self.set_default_size(700, 520)
         self._active_popover = None
 
@@ -66,12 +66,12 @@ class DisplayOptionsWindow(Gtk.ApplicationWindow):
         root.set_margin_start(22); root.set_margin_end(22)
         self.set_child(root)
 
-        title = Gtk.Label(label="Displays")
+        title = Gtk.Label(label="USB Passthrough Settings")
         title.add_css_class("title-1")
         title.set_xalign(0.0)
         root.append(title)
 
-        section_lbl = Gtk.Label(label="Display Options")
+        section_lbl = Gtk.Label(label="Passthrough Options")
         section_lbl.add_css_class("title-3")
         section_lbl.set_xalign(0.0)
         root.append(section_lbl)
@@ -105,7 +105,7 @@ class DisplayOptionsWindow(Gtk.ApplicationWindow):
         
     def refresh(self):
         try:
-            self._model = self.apiclient.get_devices_pretty(multivm_only=True)
+            self._model = self.apiclient.get_devices_pretty()
             logger.info(json.dumps(self._model, indent=4, sort_keys=True))
         except Exception as e:
             logger.exception("Failed fetching devices")
@@ -226,6 +226,6 @@ class SettingsMenu(Gtk.Application):
         self.port = port
 
     def do_activate(self, *_):
-        win = DisplayOptionsWindow(application=self, port = self.port)
+        win = DeviceSettings(application=self, port = self.port)
         win.present()
 

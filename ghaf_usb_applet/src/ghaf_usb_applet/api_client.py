@@ -6,7 +6,7 @@ import json
 import threading
 import time
 
-from usb_ctl.logger import logger
+from ghaf_usb_applet.logger import logger
 
 class APIClient:
     def __init__(self, port=2000, cid=2):
@@ -98,17 +98,22 @@ class APIClient:
         thread.start()
         return thread, client
 
-    def get_devices_pretty(self, multivm_only = False):
+    def get_devices_pretty(self):
         devices = self.usb_list()
         logger.debug(f"{devices}")
         device_map = {}
         unique_idx = 1
         if devices.get("result") == "ok":
             for dev in devices.get("usb_devices", []):
-                if multivm_only:
-                    allowed_vms = dev.get("allowed_vms", [])
-                    if len(allowed_vms) < 2:
-                        continue
+                print(dev)
+                allowed_vms = dev.get("allowed_vms", None)
+                if allowed_vms is None or len(allowed_vms) == 0:
+                    continue
+                if 'eject' not in allowed_vms:
+                    allowed_vms = allowed_vms.insert(0, 'eject')
+                vm = dev.get("vm", None)
+                if vm is None:
+                    dev['vm'] = 'eject'         
                 if "device_node" in dev and "product_name" in dev:
                     product_name = dev.get("product_name")
                     if product_name is None:

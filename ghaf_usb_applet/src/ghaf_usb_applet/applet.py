@@ -3,12 +3,13 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-gi.require_version("AppIndicator3", "0.1")
-from gi.repository import Gtk, AppIndicator3, GLib
+gi.require_version("AyatanaAppIndicator3", "0.1")
+from gi.repository import  AyatanaAppIndicator3 as AppIndicator3
+from gi.repository import Gtk, GLib
 
-from usb_ctl.logger import logger
-from usb_ctl.api_client import APIClient
-from usb_ctl.notification_handler import USBDeviceNotification
+from ghaf_usb_applet.logger import logger
+from ghaf_usb_applet.api_client import APIClient
+from ghaf_usb_applet.notification_handler import USBDeviceNotification
 
 import threading
 import subprocess

@@ -4,7 +4,7 @@
 import logging
 from functools import wraps
 
-MODULE_NAME = "usb_ctl"
+MODULE_NAME = "ghaf_usb_applet"
 
 logger = logging.getLogger(MODULE_NAME)
 CALL_TRACER = True

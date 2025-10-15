@@ -4,9 +4,12 @@
 {
   buildPythonApplication,
   setuptools,
-  wheel,
+  #wheel,
   gtk3,
-  wrapGAppsHook,
+  gtk4,
+  gobject-introspection,
+  libayatana-appindicator,
+  wrapGAppsHook3,
   pygobject3,
 }:
 
@@ -18,17 +21,17 @@ buildPythonApplication {
 
   nativeBuildInputs = [
     setuptools
-    wheel
+    #wheel
+    wrapGAppsHook3
     gobject-introspection
-    wrapGAppsHook
-  ];
-
-  propagatedBuildInputs = [
-    pygobject3
   ];
 
   buildInputs = [
+    libayatana-appindicator
     gtk3
-    gsettings-desktop-schemas
+    gtk4
+  ];
+  propagatedBuildInputs = [
+    pygobject3
   ];
 }

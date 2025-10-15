@@ -6,8 +6,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gtk, Gio, Gdk
 
-from usb_ctl.logger import logger
-from usb_ctl.api_client import APIClient
+from ghaf_usb_applet.logger import logger
+from ghaf_usb_applet.api_client import APIClient
 
 SELECT = "Select"
 
