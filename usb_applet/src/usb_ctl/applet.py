@@ -8,10 +8,10 @@ from gi.repository import Gtk, AppIndicator3, GLib
 
 from usb_ctl.logger import logger
 from usb_ctl.api_client import APIClient
+from usb_ctl.notification_handler import USBDeviceNotification
 
 import threading
 import subprocess
-
 
 class USBApplet:
     def __init__(self, port=2000):
@@ -29,50 +29,70 @@ class USBApplet:
 
         self.menu = Gtk.Menu()
         self.indicator.set_menu(self.menu)
-        self.devices_item = Gtk.MenuItem(label="Devices")
-        self.menu.append(self.devices_item)
-
-        self.menu.append(Gtk.SeparatorMenuItem())
-
-        self.settings_item = Gtk.MenuItem(label="Settings")
-        self.settings_item.connect("activate", self.open_settings)
-        self.menu.append(self.settings_item)
-
-        quit_item = Gtk.MenuItem(label="Quit")
-        quit_item.connect("activate", self.quit)
-        self.menu.append(quit_item)
-
-        self.menu.show_all()
         self.refresh_device_list(async_=True)
-        self.devices_item.connect("activate", lambda *_: self.refresh_device_list(async_=True))
+        self.menu.show_all()
+
+    def on_vm_toggled(self, menuitem, devname):
+        if menuitem.get_active():
+            device_node = self.device_map[devname]['device_node']
+            vm = menuitem.get_label()
+            if vm == 'eject':
+                self.apiclient.usb_detach(device_node)
+                return
+            res = self.apiclient.usb_attach(device_node, vm)
+            if (
+                res.get('event', '') == 'usb_attached'
+                or res.get('result', '') == 'ok'
+            ):
+                logger.info(f"{devname} passed to {vm}")
+            else:
+                GLib.idle_add(self._notify_error, "Device Error", f"Message: {res}")
 
     def _build_devices_submenu(self):
-        submenu = Gtk.Menu()
+        submenu = self.menu
         self.radio_groups.clear()
         for dev_name, dev in self.device_map.items():
-            label = f"{dev_name:<25}\n▶ {dev["vm"]}"
-            dev_top = Gtk.MenuItem(label=label)
+            dev_top = Gtk.MenuItem(label=dev_name)
+            devicemenu = Gtk.Menu()
             self.radio_groups[dev_name] = dev_top
-            dev_top.connect("activate",  self.refresh_device)
             submenu.append(dev_top)
+            allowed_vms = dev.get('allowed_vms', [])
+            if 'eject' not in allowed_vms:
+                allowed_vms.insert(0, "eject")
+            selected = dev.get('vm', None)
+            if selected is None:
+                selected = 'eject'
+                
+            if selected not in allowed_vms:
+                allowed_vms.append(selected)
+            radio_group = None
+            self.device_map[dev_name]['allowed_vms'] = allowed_vms
+            self.device_map[dev_name]['vm'] = selected
+            for vm in allowed_vms:
+                if radio_group is None:
+                    radio_item = Gtk.RadioMenuItem.new_with_label(None, vm)
+                    radio_group = radio_item
+                else:
+                    radio_item = Gtk.RadioMenuItem.new_with_label_from_widget(radio_group, vm)
+                if vm == selected:
+                    radio_item.set_active(True)
+                radio_item.connect("toggled", self.on_vm_toggled, dev_name)
+                devicemenu.append(radio_item)
+            dev_top.set_submenu(devicemenu)
 
+        settings_item = Gtk.MenuItem(label="Settings")
+        settings_item.connect("activate", self.open_settings)
+        submenu.append(settings_item)
         submenu.show_all()
-        self.devices_item.set_submenu(submenu)
             
     def open_settings(self, *_):
-        result = subprocess.run(["usb_settings"], capture_output=True, text=True, check=True)
-        #self.devices_item.get_submenu().cancel()
-        #self.menu.popdown()
+        result = subprocess.Popen(["usb_settings"])
+        self.menu.popdown()
         Gtk.MenuShell.deactivate(self.menu)
 
-        
-        print("PPPPPPPPPPPPPP")
-        logger.info("Command output:")
-        logger.info(result.stdout)
-        logger.info(f"Command exited with code: {result.returncode}")
-
-    def quit(self, *_):
-        Gtk.main_quit()
+    def clear_menu(self):
+        for child in self.menu.get_children():
+            self.menu.remove(child)
 
     def refresh_device_list(self, async_=True):
         def _fetch_and_update():
@@ -84,10 +104,11 @@ class USBApplet:
                 return
 
             def _apply():
+                self.clear_menu()
                 self.device_map = devs or {}
                 self.radio_groups.clear()
                 self._build_devices_submenu()
-                return False
+                return GLib.SOURCE_REMOVE
             GLib.idle_add(_apply)
 
         if async_:
@@ -109,8 +130,6 @@ class USBApplet:
 
     def refresh_device(self, widget):
         l = widget.get_label()
-        self.devices_item.get_submenu().popdown()
-        self.menu.popdown()
         name, _ = l.split('\n')
         name = name.strip()
         dev = self.device_map.get(name, None)
@@ -134,15 +153,14 @@ class USBApplet:
             cmd = cmd + ["--vm", selected]
 
         logger.debug(cmd)
-        result = subprocess.run(cmd,  capture_output=True, text=True, check=True)
-        logger.debug(f"usb_device::STDOUT:\n{result.stdout}")
-        logger.debug(f"usb_device::STDERR:\n{result.stderr}")
-
-        
+        result = subprocess.Popen(cmd)
 
 _app_instance = None
 
 def start_usb_applet(port=2000):
     global _app_instance
-    _app_instance = USBApplet(port=port)
+    applet = USBApplet(port=port)
+    notif = USBDeviceNotification(server_port=port)
+    th = notif.monitor(applet.refresh_device_list)
     Gtk.main()
+    th.join()

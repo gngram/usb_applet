@@ -1,9 +1,8 @@
 # Copyright 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-import threading
+import subprocess
 from usb_ctl.api_client import APIClient
-from usb_ctl.vm_selection import show_device_setting
 
 import json 
 from usb_ctl.logger import logger
@@ -18,18 +17,27 @@ def format_product_name(dev):
 
 class USBDeviceNotification:
     def __init__(self, server_port=2000):
+        self.port = server_port
+        self.callback = None
+
+    def monitor(self, callback):
         th, apiclient = APIClient.recv_notifications(
-            callback=self.notify_user, port=server_port, cid=2, reconnect_delay=3
+            callback=self.notify_user, port=self.port, cid=2, reconnect_delay=3
         )
         self.apiclient = apiclient
-        th.join()
+        self.callback = callback
+        return th
 
     def notify_user(self, msg):
-        logger.debug(f"Device notification: {json.dumps(msg, indent=4)}")
+        logger.info(f"Device notification: {json.dumps(msg, indent=4)}")
         event = msg.get('event', '')
-        if event != 'usb_select_vm':
-            logger.info(f"Device notification <{event}> ignored!")
-            return
+        if event == 'usb_select_vm':
+            self.show_notif_window(msg)
+        else:
+            self.callback()
+
+
+    def show_notif_window(self, msg):
         dev = msg.get("usb_device", {})
         allowed = msg.get("allowed_vms", [])
         if len(allowed) < 2:
@@ -37,9 +45,21 @@ class USBDeviceNotification:
             return
         dev["allowed_vms"] = allowed
         format_product_name(dev)
-        th = threading.Thread(target=self.show_notif_window, args=(dev, self.apiclient), daemon = True)
-        th.start()
-        #th.join()
 
-    def show_notif_window(self, device, apiclient):
-        show_device_setting(device, title = "Device Notification", apiclient = apiclient)
+        name = dev.get('product_name', '<unknown device>')
+        name = name.replace('_', ' ')
+        cmd = [
+            "usb_device",
+            "--title", "New device attached!",
+            "--device_node", dev.get('device_node', ''),
+            "--product_name", name,
+            "--allowed_vms", *dev.get('allowed_vms', ''),
+        ]
+
+        selected = dev.get('vm', None)
+        if selected:
+            cmd = cmd + ["--vm", selected]
+
+        logger.debug(cmd)
+        subprocess.Popen(cmd)
+        
