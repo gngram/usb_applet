@@ -6,7 +6,7 @@ import json
 import threading
 import time
 
-from usb_panel.logger import logger
+from usb_ctl.logger import logger
 
 class APIClient:
     def __init__(self, port=2000, cid=2):
@@ -98,3 +98,30 @@ class APIClient:
         thread.start()
         return thread, client
 
+    def get_devices_pretty(self, multivm_only = False):
+        devices = self.usb_list()
+        logger.debug(f"{devices}")
+        device_map = {}
+        unique_idx = 1
+        if devices.get("result") == "ok":
+            for dev in devices.get("usb_devices", []):
+                if multivm_only:
+                    allowed_vms = dev.get("allowed_vms", [])
+                    if len(allowed_vms) < 2:
+                        continue
+                if "device_node" in dev and "product_name" in dev:
+                    product_name = dev.get("product_name")
+                    if product_name is None:
+                        continue
+
+                    if product_name.isdigit():
+                        product_name = "<unknown device>"
+                    product_name = product_name.replace('_', " ")
+                    if product_name not in device_map:
+                        device_map[product_name] = dev
+                    else:
+                        product_name = product_name + "(" + str(unique_idx) + ")"
+                        device_map[product_name] = dev
+                        unique_idx += 1
+        return device_map
+        

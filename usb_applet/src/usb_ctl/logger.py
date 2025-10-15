@@ -4,7 +4,7 @@
 import logging
 from functools import wraps
 
-MODULE_NAME = "upm"
+MODULE_NAME = "usb_ctl"
 
 logger = logging.getLogger(MODULE_NAME)
 CALL_TRACER = True
@@ -12,7 +12,7 @@ CALL_TRACER = True
 
 def setup_logger(level: str = "info"):
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("[upm] %(levelname)s %(message)s"))
+    handler.setFormatter(logging.Formatter(f"[{MODULE_NAME}] %(levelname)s %(message)s"))
     logger.addHandler(handler)
 
     if level == "info":

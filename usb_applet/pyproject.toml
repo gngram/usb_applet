@@ -21,7 +21,10 @@ dependencies = [
 Homepage = "https://github.com/yourname/usb_panel"
 
 [project.scripts]
-usb_panel = "bin.usb_applet:main"
+usb_applet = "bin.usb_applet:main"
+usb_settings = "bin.usb_settings:main"
+usb_notification = "bin.usb_notification:main"
+usb_device = "bin.usb_device:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

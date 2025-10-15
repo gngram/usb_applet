@@ -1,13 +1,16 @@
-from usb_panel import applet, alert 
-from usb_panel.logger import setup_logger
-import logging 
+# Copyright 2022-2025 TII (SSRC) and the Ghaf contributors
+# SPDX-License-Identifier: Apache-2.0
 
-logger = logging.getLogger("vhotplug_client")
-import sys
+from usb_ctl import applet 
+from usb_ctl.logger import setup_logger
+import argparse
 
 def main():
-    #applet.start_usb_applet(2000)
-    setup_logger("info")
-    notifications = alert.USBDeviceNotification(server_port = 2000)
-    notifications.monitor()
-
+    parser = argparse.ArgumentParser(description="USB Device Applet")
+    parser.add_argument("--loglevel", type=str, default="info", help="Log level")
+    parser.add_argument("--port", type=int, default=2000, help="vHotplg server port")
+    args = parser.parse_args()
+    setup_logger(args.loglevel)
+    applet.start_usb_applet(args.port)
+    alert.main()
+    
